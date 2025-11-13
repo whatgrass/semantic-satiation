@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>語義飽和實驗 (Semantic Satiation Experiment)</title>
+    
+    <!-- jsPsych CSS -->
+    <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" type="text/css"/>
+    
+    <!-- jsPsych JavaScript -->
+    <script src="https://unpkg.com/jspsych@7.3.3"></script>
+    <script src="https://unpkg.com/jspsych@7.3.3/plugin-html-keyboard-response.js"></script>
+    <script src="https://unpkg.com/jspsych@7.3.3/plugin-preload.js"></script>
+    <script src="https://unpkg.com/jspsych@7.3.3/plugin-image-keyboard-response.js"></script>
+
+    <style>
+        /* 測試階段的文字樣式 */
+        .test-stimulus {
+            font-size: 32px;
+            text-align: center;
+        }
+        
+        /* 兩個目標詞的樣式 */
+        .target-words {
+            font-size: 48px;
+            font-weight: bold;
+            margin-top: 30px;
+        }
+        
+        /* 整體頁面樣式 */
+        body {
+            font-family: "Microsoft JhengHei", "微軟正黑體", Arial, sans-serif;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading" style="text-align: center; padding: 50px;">
+        <p>正在載入實驗...</p>
+    </div>
+    
+    <script>
+        // 等待頁面和所有腳本載入完成
+        window.addEventListener('load', function() {
+            // 檢查 jsPsych 是否載入
+            if (typeof initJsPsych === 'undefined' || typeof jsPsychHtmlKeyboardResponse === 'undefined') {
+                document.getElementById('loading').innerHTML = 
+                    '<h2 style="color: red;">錯誤：無法載入 jsPsych 庫</h2>' +
+                    '<p>請檢查網路連線，或稍後再試。</p>' +
+                    '<p>如果問題持續，請嘗試使用本地伺服器開啟此檔案。</p>' +
+                    '<p>請按 F12 開啟開發者工具查看詳細錯誤訊息。</p>';
+                console.error('jsPsych 未載入');
+                return;
+            }
+            
+            // 隱藏載入訊息
+            document.getElementById('loading').style.display = 'none';
+            
+            // 初始化 jsPsych 
+            var jsPsych = initJsPsych({
+                on_finish: function() {
+                    // 實驗結束時，將數據下載為 CSV 檔案
+                    var data = jsPsych.data.get().csv();
+                    var filename = 'semantic_satiation_data_' + new Date().getTime() + '.csv';
+                    jsPsych.data.get().localSave('csv', filename);
+                    
+                    document.body.innerHTML = '<div style="text-align: center; padding: 50px;"><h2>實驗結束，感謝您的參與！</h2><p>數據已自動下載。</p></div>';
+                }
+            });
+
+            // --- 1. 定義實驗變數 (您的實驗材料) ---
+            // 這是您的實驗條件檔 (類似 Excel)
+            var trial_conditions = [
+                // Example 1: Satiation Condition (Target: 花, Test: 兩者皆是)
+                { category: "花", category_display: "花", target1: "牡丹", target2: "玫瑰", correct_response: 'y', instruction: "兩者是否都屬於" },
+                
+                // Example 2: Satiation Condition (Target: 花, Test: 一同/一不同)
+                { category: "花", category_display: "花", target1: "牡丹", target2: "車子", correct_response: 'n', instruction: "兩者是否都屬於" },
+                
+                // Example 3: Satiation Condition (Target: 花, Test: 兩者皆否)
+                { category: "花", category_display: "花", target1: "車子", target2: "書本", correct_response: 'n', instruction: "兩者是否都屬於" },
+                
+                // Example 4: Control Condition (Target: 家具, Test: 兩者皆是)
+                { category: "家具", category_display: "家具", target1: "桌子", target2: "椅子", correct_response: 'y', instruction: "兩者是否都屬於" },
+                
+                // Example 5: Control Condition (Target: 家具, Test: 一同/一不同)
+                { category: "家具", category_display: "家具", target1: "桌子", target2: "蘋果", correct_response: 'n', instruction: "兩者是否都屬於" },
+            ];
+
+            // --- 2. 實驗常式定義 (Trial Definitions) ---
+
+            // A. 歡迎與說明頁
+            var welcome = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: "<div style='text-align: center; padding: 50px;'><h2>歡迎參與語義飽和實驗</h2><p style='font-size: 18px; line-height: 1.8;'>在這個實驗中，您將看到一些詞彙重複出現，然後需要判斷兩個目標詞是否都屬於某個類別。</p><p style='font-size: 18px; line-height: 1.8;'>請仔細閱讀說明，並在準備好後按任意鍵繼續。</p></div>",
+            };
+
+            // B. 誘導常式 (Repetition Phase)
+            // 這裡我們只顯示「主題詞」
+            var induction_trial = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: function(){
+                    // 從 timeline_variables 讀取當前的 category_display (主題詞)
+                    var html = '<div style="font-size: 80px; font-weight: bold; color: blue; text-align: center; padding-top: 200px;">' + jsPsych.timelineVariable('category_display') + '</div>';
+                    return html;
+                },
+                choices: [" "], // 按空白鍵繼續
+                trial_duration: 500, // 刺激呈現 500ms
+                post_trial_gap: 50, // 試驗間隔 50ms
+                data: {
+                    task: 'induction',
+                    category: jsPsych.timelineVariable('category'),
+                },
+            };
+
+            // C. 測試常式 (Test Phase)
+            // 這裡呈現「主題詞」和「兩個目標詞」，並收集 Y/N 反應和 RT
+            var test_trial = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: function(){
+                    // 顯示指令和目標詞
+                    var html = '<div class="test-stimulus">主題：' + jsPsych.timelineVariable('category') + '</div>';
+                    html += '<div class="test-stimulus">' + jsPsych.timelineVariable('instruction') + ' ' + jsPsych.timelineVariable('category') + ' 嗎？</div>';
+                    html += '<div class="target-words">' + jsPsych.timelineVariable('target1') + ' 與 ' + jsPsych.timelineVariable('target2') + '</div>';
+                    html += '<p style="margin-top: 50px; text-align: center; font-size: 20px;">【按鍵 Y = 是 / 按鍵 N = 否】</p>';
+                    return html;
+                },
+                choices: ['y', 'n'], // 只接受 Y 或 N
+                data: {
+                    task: 'test',
+                    category: jsPsych.timelineVariable('category'),
+                    correct_response: jsPsych.timelineVariable('correct_response'),
+                    target1: jsPsych.timelineVariable('target1'),
+                    target2: jsPsych.timelineVariable('target2'),
+                },
+                on_finish: function(data){
+                    // 檢查回答是否正確
+                    data.correct = jsPsych.pluginAPI.compareKeys(data.response, data.correct_response);
+                },
+                post_trial_gap: 500,
+            };
+
+            // D. 區塊常式 (Feedback/Fixation, 這裡簡化為空)
+            var fixation = {
+                type: jsPsychHtmlKeyboardResponse,
+                stimulus: '<div style="font-size: 60px; text-align: center; padding-top: 250px;">+</div>',
+                choices: "NO_KEYS",
+                trial_duration: 1000,
+            };
+
+            // --- 3. 實驗流程定義 (Timeline Definitions) ---
+
+            // 將誘導常式重複 10 次 (Satiation Induction)
+            var induction_block = {
+                timeline: [induction_trial],
+                repetitions: 10, // 重複 10 次主題詞
+            };
+
+            // 將誘導區塊 (10次重複) 和測試常式合併為一個實驗單元
+            var full_trial_procedure = {
+                timeline: [
+                    induction_block, // 先誘導 10 次
+                    test_trial,      // 再測試
+                    fixation,        // 區塊間隔
+                ],
+                // 使用您的條件檔 (Trial Conditions) 作為變數來源
+                timeline_variables: trial_conditions,
+                randomize_order: true, // 隨機化區塊順序 (推薦)
+            };
+
+            // --- 4. 運行實驗 ---
+            var timeline = [];
+            timeline.push(welcome);
+            timeline.push(full_trial_procedure);
+
+            // 確保 jsPsych 已初始化後才運行
+            try {
+                jsPsych.run(timeline);
+            } catch (error) {
+                document.body.innerHTML = 
+                    '<div style="text-align: center; padding: 50px;">' +
+                    '<h2 style="color: red;">發生錯誤</h2>' +
+                    '<p>' + error.message + '</p>' +
+                    '<p>請按 F12 開啟開發者工具查看詳細錯誤訊息。</p>' +
+                    '</div>';
+                console.error('實驗錯誤：', error);
+            }
+        });
+    </script>
+</body>
+</html>
+
