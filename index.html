@@ -3,17 +3,20 @@
 
 <head>
   <meta charset="UTF-8">
-  <title>實驗二：目標詞＋干擾詞（語意飽和）</title>
+  <title>語意飽和實驗（GitHub Pages 版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- 正確的 jsPsych 7.3.3 CDN -->
-  <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet">
-  <script src="https://unpkg.com/jspsych@7.3.3/dist/jspsych.js"></script>
-  <script src="https://unpkg.com/jspsych@7.3.3/dist/plugin-html-keyboard-response.js"></script>
+  <!-- jsPsych：使用 jsDelivr，GitHub Pages 100% 能載入 -->
+  <link href="https://cdn.jsdelivr.net/npm/jspsych@7.3.3/css/jspsych.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@7.3.3/dist/jspsych.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspsych@7.3.3/dist/plugin-html-keyboard-response.js"></script>
 
   <style>
     body {
       background: #f7f7f7;
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
     }
 
     #jspsych-target {
@@ -28,7 +31,6 @@
       font-size: 32px;
       margin-bottom: 24px;
       font-weight: bold;
-      text-align: center;
     }
 
     .instruction-text {
@@ -65,27 +67,26 @@
   <div id="jspsych-target"></div>
 
   <script>
-    /* ===========================
-       初始化 jsPsych
-       =========================== */
+    /********************************************
+     * 初始化 jsPsych
+     ********************************************/
     const jsPsych = initJsPsych({
-      display_element: 'jspsych-target',
+      display_element: "jspsych-target",
       on_finish: function () {
-        jsPsych.data.get().localSave('csv', 'exp2_two_word.csv');
+        jsPsych.data.get().localSave("csv", "data_exp2.csv");
       }
     });
 
-    const HtmlKeyboard = jsPsych.plugins['html-keyboard-response'];
+    const HtmlKeyboard = jsPsych.plugins["html-keyboard-response"];
 
-    /* ===========================
-       刺激詞庫
-       =========================== */
-
+    /********************************************
+     * 刺激詞庫
+     ********************************************/
     const fruits = [
       "芭樂", "藍莓", "草莓", "香蕉", "蓮霧", "蘋果", "柚子", "橘子", "榴槤",
-      "奇異果", "火龍果", "葡萄柚", "李子", "水蜜桃", "龍眼", "荔枝",
-      "木瓜", "鳳梨", "西瓜", "葡萄", "櫻桃", "哈密瓜", "柿子",
-      "楊桃", "釋迦", "蔓越莓", "棗子", "水梨", "芒果", "百香果", "香瓜"
+      "奇異果", "火龍果", "葡萄柚", "李子", "水蜜桃", "龍眼", "荔枝", "木瓜",
+      "鳳梨", "西瓜", "葡萄", "櫻桃", "哈密瓜", "柿子", "楊桃", "釋迦",
+      "蔓越莓", "棗子", "水梨", "芒果", "百香果", "香瓜"
     ];
 
     const nonFruits = [
@@ -94,54 +95,51 @@
       "枕頭", "水瓶", "相機", "時鐘"
     ];
 
-    function shuffle(a) {
-      let arr = a.slice();
-      for (let i = arr.length - 1; i > 0; i--) {
-        let j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-      }
-      return arr;
-    }
-
     function pick(arr) {
       return arr[Math.floor(Math.random() * arr.length)];
     }
 
-    /* ===========================
-       產生正式 trial 
-       =========================== */
+    function shuffle(arr) {
+      let a = arr.slice();
+      for (let i = a.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [a[i], a[j]] = [a[j], a[i]];
+      }
+      return a;
+    }
 
-    const trials = [];
-    const repsPerCondition = 10;
+    /********************************************
+     * 產生正式試次
+     ********************************************/
+    const repetitions = 10;
+    const trialVariables = [];
+
     const saturateLevels = [true, false];
-    const sameCatLevels = [true, false];
+    const sameCategoryLevels = [true, false];
 
     saturateLevels.forEach(sat => {
-      sameCatLevels.forEach(same => {
-        for (let i = 0; i < repsPerCondition; i++) {
-
+      sameCategoryLevels.forEach(same => {
+        for (let i = 0; i < repetitions; i++) {
           const targetIsFruit = Math.random() < 0.5;
-          let target = targetIsFruit ? pick(fruits) : pick(nonFruits);
 
+          let target = targetIsFruit ? pick(fruits) : pick(nonFruits);
           let distractor;
-          let distractIsFruit;
 
           if (same) {
             distractor = targetIsFruit ? pick(fruits) : pick(nonFruits);
-            distractIsFruit = targetIsFruit;
           } else {
             distractor = targetIsFruit ? pick(nonFruits) : pick(fruits);
-            distractIsFruit = !targetIsFruit;
           }
 
           if (target === distractor) {
-            distractor = distractIsFruit ? pick(fruits) : pick(nonFruits);
+            distractor = targetIsFruit ? pick(fruits) : pick(nonFruits);
           }
 
-          trials.push({
-            target, distractor,
+          trialVariables.push({
+            target,
+            distractor,
             target_is_fruit: targetIsFruit,
-            distractor_is_fruit: distractIsFruit,
+            distractor_is_fruit: !targetIsFruit,
             saturate: sat,
             same_category: same
           });
@@ -149,139 +147,126 @@
       });
     });
 
-    const trialVars = shuffle(trials);
-
-    /* ===========================
-       說明
-       =========================== */
-
+    /********************************************
+     * 指示
+     ********************************************/
     const instructions = {
       type: HtmlKeyboard,
       stimulus: `
-      <div class="title">實驗二：詞語判斷任務</div>
-      <div class="instruction-text">
-        <p>每一題會同時看到兩個詞語：</p>
-        <ul style="font-size:18px;">
-          <li><b>大字（中央）是目標詞</b> — 你要判斷它是不是水果。</li>
-          <li><b>小字是干擾詞</b> — 請盡量忽略。</li>
-        </ul>
-        <p>按鍵方式：</p>
-        <ul style="font-size:18px;">
-          <li><b>F：</b> 是水果</li>
-          <li><b>J：</b> 不是水果</li>
-          <li><b>K：</b> 不確定</li>
-        </ul>
-      </div>
-      <p style="font-size:22px; margin-top:20px;">按任意鍵開始</p>
-    `
-    };
-
-    /* ===========================
-       凝視點
-       =========================== */
-    const fixation = {
-      type: HtmlKeyboard,
-      stimulus: `<div class="fix">+</div>`,
-      choices: "NO_KEYS",
-      trial_duration: 500
-    };
-
-    /* ===========================
-       語意飽和：干擾詞重複呈現
-       =========================== */
-    const saturate_block = {
-      timeline: [
-        {
-          type: HtmlKeyboard,
-          stimulus: () => `<div class="stim-distractor">${jsPsych.timelineVariable('distractor')}</div>`,
-          choices: "NO_KEYS",
-          trial_duration: 250
-        },
-        {
-          type: HtmlKeyboard,
-          stimulus: "",
-          choices: "NO_KEYS",
-          trial_duration: 100
-        }
-      ],
-      repetitions: 20,
-      conditional_function: () => jsPsych.timelineVariable('saturate') === true
-    };
-
-    /* ===========================
-       控制組：干擾詞呈現一次
-       =========================== */
-    const single_distractor = {
-      type: HtmlKeyboard,
-      stimulus: () => `<div class="stim-distractor">${jsPsych.timelineVariable('distractor')}</div>`,
-      choices: "NO_KEYS",
-      trial_duration: 500,
-      conditional_function: () => jsPsych.timelineVariable('saturate') === false
-    };
-
-    /* ===========================
-       空白間隔
-       =========================== */
-    const blank = {
-      type: HtmlKeyboard,
-      stimulus: "",
-      choices: "NO_KEYS",
-      trial_duration: 200
-    };
-
-    /* ===========================
-       目標詞＋干擾詞同時呈現（作答）
-       =========================== */
-    const target_display = {
-      type: HtmlKeyboard,
-      stimulus: () => {
-        const T = jsPsych.timelineVariable('target');
-        const D = jsPsych.timelineVariable('distractor');
-        return `
-        <div class="stim-target">${T}</div>
-        <div class="stim-distractor">${D}</div>
-        <div class="small-note">F：是水果　J：不是水果　K：不確定</div>
-        `;
-      },
-      choices: ['f', 'j', 'k'],
-      data: {
-        phase: "test",
-        target: jsPsych.timelineVariable('target'),
-        distractor: jsPsych.timelineVariable('distractor'),
-        target_is_fruit: jsPsych.timelineVariable('target_is_fruit'),
-        distractor_is_fruit: jsPsych.timelineVariable('distractor_is_fruit'),
-        saturate: jsPsych.timelineVariable('saturate'),
-        same_category: jsPsych.timelineVariable('same_category')
-      },
-      on_finish: data => {
-        const correctKey = data.target_is_fruit ? 'f' : 'j';
-        data.correct = (data.response === correctKey);
-        data.correct_key = correctKey;
-      }
-    };
-
-    const main_task = {
-      timeline: [fixation, saturate_block, single_distractor, blank, target_display],
-      timelineVariables: trialVars
-    };
-
-    /* ===========================
-       結束畫面
-       =========================== */
-    const ending = {
-      type: HtmlKeyboard,
-      stimulus: `
-        <div class="title">實驗結束</div>
-        <p>謝謝你的參與！</p>
-        <p class="small-note">資料將自動下載（CSV）。</p>
-        <p>按任意鍵離開。</p>
+        <div class="title">語意飽和實驗（二詞）</div>
+        <div class="instruction-text">
+          <p>你會看到兩個詞：</p>
+          <ul>
+            <li><b>中央大字：目標詞</b>（你要判斷是不是水果）</li>
+            <li><b>小字：干擾詞</b>（請忽略）</li>
+          </ul>
+          <p>按鍵：</p>
+          <ul>
+            <li><b>F = 是水果</b></li>
+            <li><b>J = 不是水果</b></li>
+            <li><b>K = 不確定</b></li>
+          </ul>
+        </div>
+        <p style="font-size:22px;">按任意鍵開始</p>
       `
     };
 
-    /* ===========================
-       啟動
-       =========================== */
-    jsPsych.run([instructions, main_task, ending]);
+    /********************************************
+     * 凝視點
+     ********************************************/
+    const fixation = {
+      type: HtmlKeyboard,
+      stimulus: `<div class="fix">+</div>`,
+      trial_duration: 500,
+      choices: "NO_KEYS"
+    };
+
+    /********************************************
+     * 語意飽和（干擾詞重複）
+     ********************************************/
+    const saturatePhase = {
+      timeline: [
+        {
+          type: HtmlKeyboard,
+          stimulus: () => `<div class="stim-distractor">${jsPsych.timelineVariable("distractor")}</div>`,
+          trial_duration: 200,
+          choices: "NO_KEYS"
+        },
+        { type: HtmlKeyboard, stimulus: "", trial_duration: 80, choices: "NO_KEYS" }
+      ],
+      repetitions: 20,
+      conditional_function: () =>
+        jsPsych.timelineVariable("saturate") === true
+    };
+
+    /********************************************
+     * 控制組（干擾詞一次）
+     ********************************************/
+    const singleDistractor = {
+      type: HtmlKeyboard,
+      stimulus: () => `<div class="stim-distractor">${jsPsych.timelineVariable("distractor")}</div>`,
+      trial_duration: 500,
+      choices: "NO_KEYS",
+      conditional_function: () =>
+        jsPsych.timelineVariable("saturate") === false
+    };
+
+    /********************************************
+     * 空白
+     ********************************************/
+    const blank = {
+      type: HtmlKeyboard,
+      stimulus: "",
+      trial_duration: 200,
+      choices: "NO_KEYS"
+    };
+
+    /********************************************
+     * 作答畫面
+     ********************************************/
+    const targetScreen = {
+      type: HtmlKeyboard,
+      stimulus: () => `
+        <div class="stim-target">${jsPsych.timelineVariable("target")}</div>
+        <div class="stim-distractor">${jsPsych.timelineVariable("distractor")}</div>
+        <div class="small-note">F：是水果　J：不是水果　K：不確定</div>
+      `,
+      choices: ["f", "j", "k"],
+      data: {
+        phase: "test",
+        target: jsPsych.timelineVariable("target"),
+        distractor: jsPsych.timelineVariable("distractor"),
+        target_is_fruit: jsPsych.timelineVariable("target_is_fruit"),
+        saturate: jsPsych.timelineVariable("saturate"),
+        same_category: jsPsych.timelineVariable("same_category")
+      },
+      on_finish: data => {
+        const correct = data.target_is_fruit ? "f" : "j";
+        data.correct = (data.response === correct);
+      }
+    };
+
+    /********************************************
+     * 主實驗流程
+     ********************************************/
+    const main = {
+      timeline: [fixation, saturatePhase, singleDistractor, blank, targetScreen],
+      timelineVariables: shuffle(trialVariables)
+    };
+
+    /********************************************
+     * 結束
+     ********************************************/
+    const ending = {
+      type: HtmlKeyboard,
+      stimulus: `
+        <div class="title">實驗完成</div>
+        <p>感謝參與！資料已下載。</p>
+        <p>按任意鍵結束。</p>
+      `
+    };
+
+    jsPsych.run([instructions, main, ending]);
   </script>
 
 </body>
