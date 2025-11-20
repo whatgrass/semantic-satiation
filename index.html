@@ -6,7 +6,7 @@
   <title>語意飽和實驗（GitHub Pages 版）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <!-- jsPsych：強制改成 UNPKG（最穩定，不會爆） -->
+  <!-- jsPsych：改用 UNPKG（最穩定，不會被 GitHub Pages 擋掉） -->
   <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet">
   <script src="https://unpkg.com/jspsych@7.3.3/dist/jspsych.js"></script>
   <script src="https://unpkg.com/jspsych@7.3.3/dist/plugin-html-keyboard-response.js"></script>
@@ -109,7 +109,7 @@
     }
 
     /********************************************
-     * 產生正式試次
+     * 生成試次
      ********************************************/
     const repetitions = 10;
     const trialVariables = [];
@@ -148,7 +148,7 @@
     });
 
     /********************************************
-     * 指示
+     * 指示頁
      ********************************************/
     const instructions = {
       type: HtmlKeyboard,
@@ -182,17 +182,23 @@
     };
 
     /********************************************
-     * 語意飽和（干擾詞重複）
+     * 語意飽和重複呈現
      ********************************************/
     const saturatePhase = {
       timeline: [
         {
           type: HtmlKeyboard,
-          stimulus: () => `<div class="stim-distractor">${jsPsych.timelineVariable("distractor")}</div>`,
+          stimulus: () =>
+            `<div class="stim-distractor">${jsPsych.timelineVariable("distractor")}</div>`,
           trial_duration: 200,
           choices: "NO_KEYS"
         },
-        { type: HtmlKeyboard, stimulus: "", trial_duration: 80, choices: "NO_KEYS" }
+        {
+          type: HtmlKeyboard,
+          stimulus: "",
+          trial_duration: 80,
+          choices: "NO_KEYS"
+        }
       ],
       repetitions: 20,
       conditional_function: () =>
@@ -200,11 +206,12 @@
     };
 
     /********************************************
-     * 控制組（干擾詞一次）
+     * 控制組（一次干擾）
      ********************************************/
     const singleDistractor = {
       type: HtmlKeyboard,
-      stimulus: () => `<div class="stim-distractor">${jsPsych.timelineVariable("distractor")}</div>`,
+      stimulus: () =>
+        `<div class="stim-distractor">${jsPsych.timelineVariable("distractor")}</div>`,
       trial_duration: 500,
       choices: "NO_KEYS",
       conditional_function: () =>
@@ -222,7 +229,7 @@
     };
 
     /********************************************
-     * 作答畫面
+     * 目標詞作答
      ********************************************/
     const targetScreen = {
       type: HtmlKeyboard,
@@ -255,7 +262,7 @@
     };
 
     /********************************************
-     * 結束
+     * 結束頁面
      ********************************************/
     const ending = {
       type: HtmlKeyboard,
