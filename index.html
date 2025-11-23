@@ -10,7 +10,7 @@
   <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet">
 
   <style>
-    /* 置中呈現主區塊 */
+    /* 主容器置中 */
     #jspsych-target {
       display: flex;
       justify-content: center;
@@ -19,7 +19,7 @@
       text-align: center;
     }
 
-    /* 包住字與按鈕 */
+    /* 字 + 按鈕容器 */
     .experiment-container {
       display: flex;
       flex-direction: column;
@@ -33,14 +33,14 @@
       font-weight: bold;
     }
 
-    /* 按鈕列 */
+    /* 三個按鈕水平排列 */
     .button-row {
       display: flex;
       justify-content: center;
       gap: 40px;
     }
 
-    /* 客製化按鈕 */
+    /* 按鈕樣式 */
     .custom-btn {
       padding: 18px 34px;
       font-size: 1.6rem;
@@ -63,26 +63,24 @@
 <body>
   <div id="jspsych-target"></div>
 
-  <!-- jsPsych 主程式 -->
+  <!-- jsPsych -->
   <script src="https://unpkg.com/jspsych@7.3.3/dist/index.browser.js"></script>
-
-  <!-- 使用 keyboard-response 插件（不會覆蓋你的按鈕） -->
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.1/dist/index.browser.js"></script>
 
-  <!-- Firebase -->
+  <!-- Firebase compat（適用 GitHub Pages） -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
-    /* Firebase 初始化 */
+    /* Firebase 初始化（你的新專案 semantic-5ab52） */
     const firebaseConfig = {
-      apiKey: "AIzaSyBU_HM8IZPb52LYf7o1ECjzN5S9Ovav0v8",
-      authDomain: "semantic-satiation-1.firebaseapp.com",
-      projectId: "semantic-satiation-1",
-      storageBucket: "semantic-satiation-1.firebasestorage.app",
-      messagingSenderId: "129667985240",
-      appId: "1:129667985240:web:47056daf1876712c617f2d",
-      measurementId: "G-G859909HPH"
+      apiKey: "AIzaSyA7hc22op7qsF462cEujepH8bS3TSTy4Xo",
+      authDomain: "semantic-5ab52.firebaseapp.com",
+      projectId: "semantic-5ab52",
+      storageBucket: "semantic-5ab52.firebasestorage.app",
+      messagingSenderId: "673481471436",
+      appId: "1:673481471436:web:cbc96c9508656f92e39969",
+      measurementId: "G-7CRN54L35Q"
     };
 
     firebase.initializeApp(firebaseConfig);
@@ -127,11 +125,11 @@
     fruit_words.forEach(w => all_words.push({ word: w, category: "fruit" }));
     distractor_words.forEach(w => all_words.push({ word: w, category: "nonfruit" }));
 
-    /* Trial 建立 */
+    /* Trial 建構 */
     function makeTrial(item, isPractice = false) {
       return {
         type: jsPsychHtmlKeyboardResponse,
-        choices: "NO_KEYS", /* 自己控制按鈕 */
+        choices: "NO_KEYS",
 
         stimulus: `
           <div class="experiment-container">
@@ -174,18 +172,16 @@
       };
     }
 
-    /* Timeline */
+    /* timeline */
     let timeline = [];
 
-    /* 說明頁 */
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
       choices: "NO_KEYS",
       stimulus: `
         <h2>實驗說明</h2>
         <p>請判斷螢幕中央的詞語是否為水果。</p>
-        <p>手機請按按鈕；電腦可使用鍵盤：</p>
-        <p>Y＝是、N＝不是、Space＝不確定</p>
+        <p>手機請按按鈕；電腦可使用鍵盤 Y（是）/ N（不是）/ Space（不確定）</p>
         <button class="custom-btn" id="start">開始練習</button>
       `,
       on_load() {
@@ -193,11 +189,9 @@
       }
     });
 
-    /* 練習 5 題 */
     const practice = jsPsych.randomization.sampleWithoutReplacement(all_words, 5);
     practice.forEach(item => timeline.push(makeTrial(item, true)));
 
-    /* 正式前提示 */
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
       choices: "NO_KEYS",
@@ -210,7 +204,6 @@
       }
     });
 
-    /* 正式 50 題 */
     const test = jsPsych.randomization.sampleWithoutReplacement(all_words, 50);
     test.forEach(item => timeline.push(makeTrial(item, false)));
 
