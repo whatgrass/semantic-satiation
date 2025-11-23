@@ -73,13 +73,16 @@
 <body>
   <div id="jspsych-target"></div>
 
+  <!-- jsPsych -->
   <script src="https://unpkg.com/jspsych@7.3.3/dist/index.browser.js"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.1/dist/index.browser.js"></script>
 
+  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
+    /* Firebase 初始化 */
     const firebaseConfig = {
       apiKey: "AIzaSyA7hc22op7qsF462cEujepH8bS3TSTy4Xo",
       authDomain: "semantic-5ab52.firebaseapp.com",
@@ -95,9 +98,11 @@
 
     const participant_id = "P" + Math.random().toString(36).substring(2, 10);
 
+    /* jsPsych 初始化 */
     const jsPsych = initJsPsych({
       display_element: "jspsych-target",
       override_safe_mode: true,
+
       on_finish: async () => {
         const results = jsPsych.data.get().filter(r => r.word).values();
 
@@ -112,7 +117,111 @@
       }
     });
 
+    /* 刺激詞 */
     const fruit_words = [
       "芭樂","藍莓","草莓","香蕉","蓮霧","蘋果","柚子","橘子","榴槤","奇異果",
       "火龍果","葡萄柚","李子","水蜜桃","龍眼","荔枝","木瓜","鳳梨","西瓜","葡萄",
-      "櫻桃","哈密瓜","柿子","楊桃","釋迦","蔓越莓","棗
+      "櫻桃","哈密瓜","柿子","楊桃","釋迦","蔓越莓","棗子","水梨","芒果","百香果","香瓜"
+    ];
+
+    const distractor_words = [
+      "雨傘","火車","鯨魚","筷子","銀河","眼鏡","沙漏","密碼","棉花糖","齒輪",
+      "地震","茶壺","衣櫃","星座","烏龜","廚房","影子","橡皮擦","雪人","時鐘",
+      "錢包","城堡","電梯","口琴","雲朵","書籤","鉛筆","宇宙","冰箱","風箏"
+    ];
+
+    let all_words = [];
+    fruit_words.forEach(w => all_words.push({ word: w, category: "fruit" }));
+    distractor_words.forEach(w => all_words.push({ word: w, category: "nonfruit" }));
+
+    /* RT 正確版 trial */
+    function makeTrial(item, isPractice = false) {
+      return {
+        type: jsPsychHtmlKeyboardResponse,
+        choices: "NO_KEYS",
+
+        stimulus: `
+          <div class="experiment-container">
+            <div class="stimulus-text">${item.word}</div>
+            <div class="button-row">
+              <button class="custom-btn" id="yes">是</button>
+              <button class="custom-btn" id="no">不是</button>
+              <button class="custom-btn" id="unsure">不確定</button>
+            </div>
+          </div>
+        `,
+
+        on_load() {
+          const start = performance.now();
+
+          function end(resp) {
+            const rt = performance.now() - start;
+
+            jsPsych.finishTrial({
+              word: item.word,
+              category: item.category,
+              response: resp,
+              rt: rt,
+              phase: isPractice ? "practice" : "test",
+              correct:
+                (item.category === "fruit" && resp === "y") ||
+                (item.category === "nonfruit" && resp === "n")
+            });
+          }
+
+          document.getElementById("yes").onclick    = () => end("y");
+          document.getElementById("no").onclick     = () => end("n");
+          document.getElementById("unsure").onclick = () => end(" ");
+
+          document.addEventListener("keydown", e => {
+            if (e.key === "y") end("y");
+            if (e.key === "n") end("n");
+            if (e.code === "Space") end(" ");
+          });
+        }
+      };
+    }
+
+    /* timeline */
+    let timeline = [];
+
+    timeline.push({
+      type: jsPsychHtmlKeyboardResponse,
+      choices: "NO_KEYS",
+      stimulus: `
+        <h2>實驗說明</h2>
+        <p>請判斷螢幕中央的詞語是否為水果。</p>
+        <p>手機按按鈕；電腦按 Y / N / 空白鍵</p>
+        <button id="start" class="custom-btn">開始練習</button>
+      `,
+      on_load() {
+        document.getElementById("start").onclick = () => jsPsych.finishTrial();
+      }
+    });
+
+    /* 練習 5 題 */
+    const practice = jsPsych.randomization.sampleWithoutReplacement(all_words, 5);
+    practice.forEach(x => timeline.push(makeTrial(x, true)));
+
+    /* 正式開始提示 */
+    timeline.push({
+      type: jsPsychHtmlKeyboardResponse,
+      choices: "NO_KEYS",
+      stimulus: `
+        <h3>練習結束，準備開始正式測驗（100 題）。</h3>
+        <button id="go" class="custom-btn">開始</button>
+      `,
+      on_load() {
+        document.getElementById("go").onclick = () => jsPsych.finishTrial();
+      }
+    });
+
+    /* ⭐ 正式 100 題（重複呈現） */
+    const test = jsPsych.randomization.sampleWithReplacement(all_words, 100);
+    test.forEach(x => timeline.push(makeTrial(x)));
+
+    jsPsych.run(timeline);
+  </script>
+
+</body>
+</html>
