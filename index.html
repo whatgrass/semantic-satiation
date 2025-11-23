@@ -120,7 +120,7 @@
     fruit_words.forEach(w => all_words.push({ word: w, category: "fruit" }));
     distractor_words.forEach(w => all_words.push({ word: w, category: "nonfruit" }));
 
-    /* trial 建構（含 RT） */
+    /* === RT 正確版 trial === */
     function makeTrial(item, isPractice = false) {
       return {
         type: jsPsychHtmlKeyboardResponse,
@@ -139,36 +139,35 @@
         `,
 
         on_load() {
-          let trialStart = performance.now();
+          // RT 計時開始
+          const start = performance.now();
 
-          function finish(resp) {
-            let rt = performance.now() - trialStart;
+          function endTrial(resp) {
+            const rt = performance.now() - start;
 
             jsPsych.finishTrial({
+              word: item.word,
+              category: item.category,
               response: resp,
-              rt: rt
+              rt: rt,
+              phase: isPractice ? "practice" : "test",
+              correct:
+                (item.category === "fruit" && resp === "y") ||
+                (item.category === "nonfruit" && resp === "n")
             });
           }
 
-          document.getElementById("yes").onclick   = () => finish("y");
-          document.getElementById("no").onclick    = () => finish("n");
-          document.getElementById("unsure").onclick = () => finish(" ");
+          // 按鈕
+          document.getElementById("yes").onclick    = () => endTrial("y");
+          document.getElementById("no").onclick     = () => endTrial("n");
+          document.getElementById("unsure").onclick = () => endTrial(" ");
 
+          // 鍵盤
           document.addEventListener("keydown", (e) => {
-            if (e.key === "y") finish("y");
-            if (e.key === "n") finish("n");
-            if (e.code === "Space") finish(" ");
+            if (e.key === "y") endTrial("y");
+            if (e.key === "n") endTrial("n");
+            if (e.code === "Space") endTrial(" ");
           });
-        },
-
-        on_finish(data) {
-          data.word = item.word;
-          data.category = item.category;
-          data.phase = isPractice ? "practice" : "test";
-
-          data.correct =
-            (item.category === "fruit" && data.response === "y") ||
-            (item.category === "nonfruit" && data.response === "n");
         }
       };
     }
