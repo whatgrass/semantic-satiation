@@ -134,7 +134,7 @@
     fruit_words.forEach(w => all_words.push({ word: w, category: "fruit" }));
     distractor_words.forEach(w => all_words.push({ word: w, category: "nonfruit" }));
 
-    /* RT 正確版 trial */
+    /* RT ＋ 防止多次觸發 / 跳題 的 trial */
     function makeTrial(item, isPractice = false) {
       return {
         type: jsPsychHtmlKeyboardResponse,
@@ -153,8 +153,18 @@
 
         on_load() {
           const start = performance.now();
+          let finished = false;
+          let keyHandler = null;
 
           function end(resp) {
+            if (finished) return;
+            finished = true;
+
+            // 移除鍵盤事件，避免累積
+            if (keyHandler) {
+              document.removeEventListener('keydown', keyHandler);
+            }
+
             const rt = performance.now() - start;
 
             jsPsych.finishTrial({
@@ -169,15 +179,19 @@
             });
           }
 
+          // 鍵盤事件（命名 handler，之後好移除）
+          keyHandler = function (e) {
+            if (e.key === "y") end("y");
+            else if (e.key === "n") end("n");
+            else if (e.code === "Space") end(" ");
+          };
+
+          document.addEventListener("keydown", keyHandler);
+
+          // 按鈕事件（也走 end，確保邏輯一致）
           document.getElementById("yes").onclick    = () => end("y");
           document.getElementById("no").onclick     = () => end("n");
           document.getElementById("unsure").onclick = () => end(" ");
-
-          document.addEventListener("keydown", e => {
-            if (e.key === "y") end("y");
-            if (e.key === "n") end("n");
-            if (e.code === "Space") end(" ");
-          });
         }
       };
     }
@@ -185,6 +199,7 @@
     /* timeline */
     let timeline = [];
 
+    // 說明頁
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
       choices: "NO_KEYS",
@@ -199,11 +214,11 @@
       }
     });
 
-    /* 練習 5 題 */
+    // 練習 5 題（不重複）
     const practice = jsPsych.randomization.sampleWithoutReplacement(all_words, 5);
     practice.forEach(x => timeline.push(makeTrial(x, true)));
 
-    /* 正式開始提示 */
+    // 正式前提示
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
       choices: "NO_KEYS",
@@ -216,7 +231,7 @@
       }
     });
 
-    /* ⭐ 正式 100 題（重複呈現） */
+    // ⭐ 正式 100 題（可重複）
     const test = jsPsych.randomization.sampleWithReplacement(all_words, 100);
     test.forEach(x => timeline.push(makeTrial(x)));
 
