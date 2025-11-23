@@ -6,11 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>實驗二：語意飽和（水果）</title>
 
-  <!-- 使用 jsPsych CDN（Pages可用） -->
+  <!-- jsPsych -->
   <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet">
 
   <style>
-    /* 主容器置中 */
     #jspsych-target {
       display: flex;
       justify-content: center;
@@ -19,7 +18,6 @@
       text-align: center;
     }
 
-    /* 字 + 按鈕容器 */
     .experiment-container {
       display: flex;
       flex-direction: column;
@@ -27,20 +25,17 @@
       gap: 60px;
     }
 
-    /* 刺激字 */
     .stimulus-text {
       font-size: 3rem;
       font-weight: bold;
     }
 
-    /* 三個按鈕水平排列 */
     .button-row {
       display: flex;
       justify-content: center;
       gap: 40px;
     }
 
-    /* 按鈕樣式 */
     .custom-btn {
       padding: 18px 34px;
       font-size: 1.6rem;
@@ -63,16 +58,16 @@
 <body>
   <div id="jspsych-target"></div>
 
-  <!-- jsPsych -->
+  <!-- jsPsych scripts -->
   <script src="https://unpkg.com/jspsych@7.3.3/dist/index.browser.js"></script>
   <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.1/dist/index.browser.js"></script>
 
-  <!-- Firebase compat（適用 GitHub Pages） -->
+  <!-- Firebase compat SDK -->
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
 
   <script>
-    /* Firebase 初始化（你的新專案 semantic-5ab52） */
+    /* Firebase 初始化 (semantic-5ab52) */
     const firebaseConfig = {
       apiKey: "AIzaSyA7hc22op7qsF462cEujepH8bS3TSTy4Xo",
       authDomain: "semantic-5ab52.firebaseapp.com",
@@ -94,7 +89,7 @@
       override_safe_mode: true,
 
       on_finish: async () => {
-        const results = jsPsych.data.get().filter(r => r.stimulus).values();
+        const results = jsPsych.data.get().filter(r => r.word).values();
 
         await db.collection("fruit_experiment").doc(participant_id).set({
           participant: participant_id,
@@ -125,7 +120,7 @@
     fruit_words.forEach(w => all_words.push({ word: w, category: "fruit" }));
     distractor_words.forEach(w => all_words.push({ word: w, category: "nonfruit" }));
 
-    /* Trial 建構 */
+    /* trial 建構（含 RT） */
     function makeTrial(item, isPractice = false) {
       return {
         type: jsPsychHtmlKeyboardResponse,
@@ -144,19 +139,25 @@
         `,
 
         on_load() {
-          document.getElementById("yes").onclick = () =>
-            jsPsych.finishTrial({ response: "y" });
+          let trialStart = performance.now();
 
-          document.getElementById("no").onclick = () =>
-            jsPsych.finishTrial({ response: "n" });
+          function finish(resp) {
+            let rt = performance.now() - trialStart;
 
-          document.getElementById("unsure").onclick = () =>
-            jsPsych.finishTrial({ response: " " });
+            jsPsych.finishTrial({
+              response: resp,
+              rt: rt
+            });
+          }
+
+          document.getElementById("yes").onclick   = () => finish("y");
+          document.getElementById("no").onclick    = () => finish("n");
+          document.getElementById("unsure").onclick = () => finish(" ");
 
           document.addEventListener("keydown", (e) => {
-            if (e.key === "y") document.getElementById("yes").click();
-            if (e.key === "n") document.getElementById("no").click();
-            if (e.code === "Space") document.getElementById("unsure").click();
+            if (e.key === "y") finish("y");
+            if (e.key === "n") finish("n");
+            if (e.code === "Space") finish(" ");
           });
         },
 
