@@ -36,7 +36,6 @@
       gap: 32px;
     }
 
-    /* 按鈕縮小版 */
     .custom-btn {
       padding: 12px 20px;
       font-size: 1.25rem;
@@ -52,23 +51,6 @@
     .custom-btn:hover {
       background-color: #3f8d43;
       transform: translateY(-2px);
-    }
-
-    /* 手機專用（再縮小） */
-    @media (max-width: 600px) {
-      .stimulus-text {
-        font-size: 2.4rem;
-      }
-
-      .custom-btn {
-        padding: 10px 16px;
-        font-size: 1.1rem;
-        min-width: 95px;
-      }
-
-      .button-row {
-        gap: 20px;
-      }
     }
   </style>
 </head>
@@ -101,6 +83,7 @@
 
     const participant_id = "P" + Math.random().toString(36).substring(2, 10);
 
+
     /* jsPsych 初始化 */
     const jsPsych = initJsPsych({
       display_element: "jspsych-target",
@@ -120,6 +103,7 @@
       }
     });
 
+
     /* 刺激詞 */
     const fruit_words = [
       "芭樂","藍莓","草莓","香蕉","蓮霧","蘋果","柚子","橘子","榴槤","奇異果",
@@ -138,7 +122,7 @@
     distractor_words.forEach(w => all_words.push({ word: w, category: "nonfruit" }));
 
 
-    /* Trial 共用結構 */
+    /* Trial 主體 */
     function makeTrial(item, isPractice = false) {
       return {
         type: jsPsychHtmlKeyboardResponse,
@@ -147,13 +131,15 @@
         stimulus: `
           <div class="experiment-container">
             <div class="stimulus-text">${item.word}</div>
+
             <div class="button-row">
               <button class="custom-btn" id="yesBtn">是</button>
               <button class="custom-btn" id="noBtn">不是</button>
               <button class="custom-btn" id="maybeBtn">不確定</button>
             </div>
             <p style="font-size:1.1rem;">(Y=是, N=不是, 空白=不確定)</p>
-            <div id="feedback" style="font-size:3rem; height:60px;"></div>
+
+            ${isPractice ? `<div id="feedback" style="font-size:3rem; height:60px;"></div>` : ""}
           </div>
         `,
 
@@ -161,13 +147,14 @@
           const start = performance.now();
 
           function finish(resp) {
+
             const rt = performance.now() - start;
             const correct =
               (item.category === "fruit" && resp === "y") ||
               (item.category === "nonfruit" && resp === "n");
 
-            const fb = document.getElementById("feedback");
             if (isPractice) {
+              const fb = document.getElementById("feedback");
               fb.textContent = correct ? "✔" : "✘";
               fb.style.color = correct ? "#27ae60" : "#e74c3c";
             }
@@ -198,12 +185,13 @@
     }
 
 
-    /* -------------------------
-       timeline
-    -------------------------- */
+    /* ===========================
+       timeline 主體
+    =========================== */
     let timeline = [];
 
-    /* ---- 開始頁 ---- */
+
+    /* ------ 開始頁 ------ */
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
       choices: "NO_KEYS",
@@ -219,63 +207,121 @@
       }
     });
 
-    /* ---- 說明頁 ---- */
+
+    /* ------ 說明頁 ------ */
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
       choices: "NO_KEYS",
       stimulus: `
         <div class="experiment-container">
           <h2>實驗說明</h2>
-          <p style="font-size:1.2rem; line-height:1.8; max-width:650px;">
+
+          <p style="font-size:1.25rem; line-height:1.9; max-width:650px;">
             判斷螢幕上的詞語是否為水果。<br><br>
-            ✔ 是水果 → 按「是」/ Y<br>
-            ✔ 不是水果 → 按「不是」/ N<br>
+            ✔ 是水果 → 「是」 / Y<br>
+            ✔ 不是水果 → 「不是」 / N<br>
             ✔ 不確定 → 空白鍵<br><br>
-            練習會顯示 ✔ ✘，需連續正確 3 題才開始正式測驗。
+            練習會有 ✔ ✘ 回饋，並且<br>
+            <b>需要連續答對 3 題</b> 才會開始正式測驗。
           </p>
-          <button id="goToPractice" class="custom-btn">我了解了</button>
+
+          <button id="goPractice" class="custom-btn">我了解了</button>
         </div>
       `,
       on_load() {
-        goToPractice.onclick = () => jsPsych.finishTrial();
+        goPractice.onclick = () => jsPsych.finishTrial();
       }
     });
 
 
-    /* ---- 練習：每題都不同字 ---- */
-    let last_practice_word = null;
+    /* ------ 練習階段（模仿正式測驗跳法） ------ */
+
+    const practice_list = jsPsych.randomization.sampleWithoutReplacement(all_words, 20);
+    let practice_index = 0;
     let practice_streak = 0;
 
-    function makePracticeTrialFixed() {
-      let item;
-      do {
-        item = jsPsych.randomization.sampleWithoutReplacement(all_words, 1)[0];
-      } while (item.word === last_practice_word);
-
-      last_practice_word = item.word;
-      return makeTrial(item, true);
-    }
-
     timeline.push({
-      timeline: [makePracticeTrialFixed()],
+      timeline: [{
+        type: jsPsychHtmlKeyboardResponse,
+        choices: "NO_KEYS",
+
+        stimulus: function () {
+          const item = practice_list[practice_index];
+          return `
+            <div class="experiment-container">
+              <div class="stimulus-text">${item.word}</div>
+
+              <div class="button-row">
+                <button class="custom-btn" id="yesBtn">是</button>
+                <button class="custom-btn" id="noBtn">不是</button>
+                <button class="custom-btn" id="maybeBtn">不確定</button>
+              </div>
+
+              <p style="font-size:1.1rem;">(Y=是, N=不是, 空白=不確定)</p>
+              <div id="feedback" style="font-size:3rem; height:60px;"></div>
+            </div>
+          `;
+        },
+
+        on_load() {
+          const item = practice_list[practice_index];
+          const start = performance.now();
+
+          function finish(resp) {
+            const rt = performance.now() - start;
+            const correct =
+              (item.category === "fruit" && resp === "y") ||
+              (item.category === "nonfruit" && resp === "n");
+
+            const fb = document.getElementById("feedback");
+            fb.textContent = correct ? "✔" : "✘";
+            fb.style.color = correct ? "#27ae60" : "#e74c3c";
+
+            setTimeout(() => {
+              jsPsych.finishTrial({
+                word: item.word,
+                category: item.category,
+                response: resp,
+                correct: correct,
+                rt: rt,
+                phase: "practice"
+              });
+            }, 600);
+          }
+
+          yesBtn.onclick = () => finish("y");
+          noBtn.onclick = () => finish("n");
+          maybeBtn.onclick = () => finish(" ");
+
+          document.addEventListener("keydown", e => {
+            if (e.key.toLowerCase() === "y") finish("y");
+            if (e.key.toLowerCase() === "n") finish("n");
+            if (e.code === "Space") finish(" ");
+          });
+        }
+      }],
+
       loop_function: function (data) {
         const last = data.values()[0];
+
         if (last.correct) practice_streak++;
         else practice_streak = 0;
 
-        return practice_streak < 3;
+        practice_index++;
+
+        return practice_streak < 3 && practice_index < practice_list.length;
       }
     });
 
 
-    /* ---- 練習完成頁 ---- */
+    /* ------ 練習完成頁 ------ */
     timeline.push({
       type: jsPsychHtmlKeyboardResponse,
       choices: "NO_KEYS",
       stimulus: `
         <div class="experiment-container">
           <h3>你已連續答對 3 題！</h3>
-          <p>即將開始正式測驗。</p>
+          <p>即將開始正式測驗</p>
           <button id="goTest" class="custom-btn">開始</button>
         </div>
       `,
@@ -285,12 +331,13 @@
     });
 
 
-    /* ---- 正式測驗 ---- */
+    /* ------ 正式測驗 ------ */
     const test_list = jsPsych.randomization.sampleWithoutReplacement(all_words, 50);
     test_list.forEach(item => timeline.push(makeTrial(item, false)));
 
-    /* ---- Run ---- */
+
     jsPsych.run(timeline);
+
   </script>
 
 </body>
